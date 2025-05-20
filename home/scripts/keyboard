@@ -1,0 +1,94 @@
+#!/usr/bin/env bash
+
+DEVICE="tpacpi::kbd_backlight"
+
+ui_sound(){
+  brightness=$(get_level)
+  if [[ "$brightness" == 2 ]]; then
+    pw-play ~/.config/hypnix/home/files/sounds/click_high.mp3
+  else
+    pw-play ~/.config/hypnix/home/files/sounds/click_low.mp3
+  fi
+}
+
+get_level() {
+  brightnessctl -d "$DEVICE" get
+}
+
+set_level() {
+  local direction="$1"
+  brightnessctl -d "$DEVICE" set "50%$direction"
+}
+
+toggle_level() {
+  local current=$(get_level)
+  case "$current" in
+    0) brightnessctl -d "$DEVICE" set 1 ;;
+    1) brightnessctl -d "$DEVICE" set 2 ;;
+    2) brightnessctl -d "$DEVICE" set 0 ;;
+  esac
+}
+
+print_icon() {
+  case "$(get_level)" in
+    0) echo "󰹋" ;;   # Off icon
+    1) echo "" ;;    # Dim
+    2) echo "󰌌" ;;   # Bright
+  esac
+}
+
+print_text() {
+  case "$(get_level)" in
+    0) echo "Off" ;;
+    1) echo "Dim" ;;
+    2) echo "Bright" ;;
+  esac
+}
+
+send_notification() {
+  tmpDir="/tmp/hypnix"
+  tmpFile="$tmpDir/notification_id_osd"
+
+  if [[ ! -d "$tmpDir" ]]; then
+    mkdir "$tmpDir"
+  fi
+
+  local level=$(get_level)
+  local icon message percent
+
+  case "$level" in
+    0)
+      icon="󰹋"
+      message="Off"
+      percent=0
+      ;;
+    1)
+      icon=""
+      message="Dim"
+      percent=50
+      ;;
+    2)
+      icon="󰌌"
+      message="Bright"
+      percent=100
+      ;;
+  esac
+
+  makoctl dismiss -n $(cat $tmpFile)
+  notify-send -a "osd-keyboard" -h "int:value:$percent" -u "low" "$icon  $message" -p > $tmpFile
+}
+
+# === Command Handling ===
+case "$1" in
+  --inc) set_level "+" && send_notification && ui_sound ;;
+  --dec) set_level "-" && send_notification && ui_sound ;;
+  --toggle) toggle_level && send_notification && ui_sound ;;
+  --level) get_level ;;
+  --icon) print_icon ;;
+  --text) print_text ;;
+  *)
+    echo "Usage: $0 [--inc|--dec|--toggle|--level|--icon|--text]"
+    exit 1
+    ;;
+esac
+

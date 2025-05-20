@@ -1,0 +1,89 @@
+#!/usr/bin/env bash
+
+warn_sound(){
+  pw-play ~/.config/hypnix/home/files/sounds/warning.mp3
+}
+
+crit_sound(){
+  pw-play ~/.config/hypnix/home/files/sounds/critical.mp3
+}
+
+# === Paths ===
+batteryPath="/sys/class/power_supply/BAT0"
+tmpDir="/tmp/hypnix"
+tmpFile="$tmpDir/notification_id_osd"
+
+# === Tools ===
+NOTIFY_SEND="${NOTIFY_SEND:-$(command -v notify-send)}"
+MAKOCTL="${MAKOCTL:-$(command -v makoctl)}"
+
+# === Check battery info availability ===
+if [[ ! -r "$batteryPath/capacity" || ! -r "$batteryPath/status" ]]; then
+  "$NOTIFY_SEND" -u critical "󰂃 Battery Error" "⚠️ Failed to read battery info!"
+  crit_sound
+  exit 1
+fi
+
+# === Read battery info ===
+batteryLevel=$(<"$batteryPath/capacity")
+batteryStatus=$(<"$batteryPath/status")
+
+# === Skip notifications while charging ===
+if [[ "$batteryStatus" == "Charging" ]]; then
+  exit 0
+fi
+
+# === Prepare temp dir ===
+mkdir -p "$tmpDir"
+
+# === Icon Mapping Function ===
+get_battery_icon() {
+  local level=$1
+  local status=$2
+
+  if [[ "$status" == "Charging" ]]; then
+    if   (( level >= 100 )); then echo "󰂅"
+    elif (( level >= 90 ));  then echo "󰂋"
+    elif (( level >= 80 ));  then echo "󰂊"
+    elif (( level >= 70 ));  then echo "󰢞"
+    elif (( level >= 60 ));  then echo "󰂉"
+    elif (( level >= 50 ));  then echo "󰢝"
+    elif (( level >= 40 ));  then echo "󰂈"
+    elif (( level >= 30 ));  then echo "󰂇"
+    elif (( level >= 20 ));  then echo "󰂆"
+    else                      echo "󰢜"
+    fi
+  else
+    if   (( level >= 100 )); then echo "󰁹"
+    elif (( level >= 90 ));  then echo "󰂂"
+    elif (( level >= 80 ));  then echo "󰂁"
+    elif (( level >= 70 ));  then echo "󰂀"
+    elif (( level >= 60 ));  then echo "󰁿"
+    elif (( level >= 50 ));  then echo "󰁾"
+    elif (( level >= 40 ));  then echo "󰁽"
+    elif (( level >= 30 ));  then echo "󰁼"
+    elif (( level >= 20 ));  then echo "󰁻"
+    else                      echo "󰁺"
+    fi
+  fi
+}
+
+# === Notification ===
+batteryIcon=$(get_battery_icon "$batteryLevel" "$batteryStatus")
+
+dismiss_last() {
+  if [[ -r "$tmpFile" ]]; then
+    "$MAKOCTL" dismiss -n "$(cat "$tmpFile")" 2>/dev/null
+  fi
+}
+
+if (( batteryLevel <= 10 )); then
+  dismiss_last
+  "$NOTIFY_SEND" -a "osd-battery" -u "critical" "Critical! $batteryIcon $batteryLevel%" -p > "$tmpFile"
+  crit_sound
+elif (( batteryLevel <= 25 )); then
+  dismiss_last
+  "$NOTIFY_SEND" -a "osd-battery" -u "normal" "Warning! $batteryIcon $batteryLevel%" -p > "$tmpFile"
+  warn_sound
+fi
+

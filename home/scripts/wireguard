@@ -1,0 +1,96 @@
+#!/usr/bin/env bash
+
+WG_INTERFACE="wg0"
+WG_SERVICE="wg-quick-$WG_INTERFACE.service"
+ICON_CONNECTED="󰒄"
+ICON_DISCONNECTED="󱂇"
+
+crit_sound() {
+  pw-play ~/.config/hypnix/home/files/sounds/critical.mp3
+}
+
+warn_sound(){
+  pw-play ~/.config/hypnix/home/files/sounds/warning.mp3
+}
+
+send_notification() {
+    local icon text urgency
+    icon=$(get_status_icon)
+    text=$(get_status_text)
+
+    if [[ $text == "$WG_INTERFACE connected to "* ]]; then
+        urgency="normal"
+    elif [[ "$text" == "Disconnected" ]]; then
+        urgency="critical"
+    else
+        urgency="low"
+    fi
+
+    notify-send -a "osd-vpn" -u "$urgency" -t 5000 -i network-vpn "$icon Wireguard: $text"
+}
+
+get_status_icon() {
+    local status
+    status=$(systemctl is-active "$WG_SERVICE" 2>/dev/null)
+    if [[ "$status" == "active" || "$status" == "exited" ]]; then
+        echo "$ICON_CONNECTED"
+    else
+        echo "$ICON_DISCONNECTED"
+    fi
+}
+
+get_status_text() {
+    local status
+    status=$(systemctl is-active "$WG_SERVICE" 2>/dev/null)
+    if [[ "$status" == "active" || "$status" == "exited" ]]; then
+      WG_ENDPOINT="$(sudo wg show | grep endpoint | awk '{print $2}' | cut -d: -f1)"
+      echo "$WG_INTERFACE connected to $WG_ENDPOINT"
+    else
+        if systemctl is-failed --quiet "$WG_SERVICE"; then
+            echo "Error"
+        else
+            echo "Disconnected"
+        fi
+    fi
+}
+
+toggle_vpn() {
+    local status
+    status=$(systemctl is-active "$WG_SERVICE" 2>/dev/null)
+    if [[ "$status" == "active" || "$status" == "exited" ]]; then
+        if sudo systemctl stop "$WG_SERVICE"; then
+            echo "Disconnected ❌"
+            send_notification
+            warn_sound
+        else
+            echo "❌ ERROR!"
+            crit_sound
+        fi
+    else
+        if sudo systemctl start "$WG_SERVICE"; then
+          WG_ENDPOINT="$(sudo wg show | grep endpoint | awk '{print $2}' | cut -d: -f1)"
+          echo "Connected $WG_INTERFACE to $WG_ENDPOINT ✅"
+            send_notification
+            warn_sound
+        else
+            echo "❌ ERROR!"
+            crit_sound
+        fi
+    fi
+}
+
+case "$1" in
+    --icon|-i)
+        get_status_icon
+        ;;
+    -s|--status)
+        get_status_text
+        ;;
+    -t|--toggle)
+        toggle_vpn
+        ;;
+    *)
+        echo "Usage: $0 [-i | -s | -t]"
+        exit 1
+        ;;
+esac

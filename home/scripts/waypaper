@@ -1,0 +1,25 @@
+#!/usr/bin/env bash
+
+### Before wallust ###
+
+# Copy selected wallpaper from waypaper
+WAYPAPER_INPUT="$1"
+WP_DIR="$HOME/.cache/hypnix"
+MAKO_DIR="$HOME/.config/mako"
+
+# create wallpaper dir
+if [[ ! -d "$WP_DIR" ]]; then
+  mkdir "$WP_DIR"
+fi
+
+# create mako dir
+if [[ ! -d "$MAKO_DIR" ]]; then
+  mkdir "$MAKO_DIR"
+fi
+
+### wallust ###
+cp "$WAYPAPER_INPUT" "$WP_DIR/wallpaper"
+wallust run "$WAYPAPER_INPUT"
+
+### After wallust ###
+makoctl reload

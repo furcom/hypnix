@@ -1,0 +1,17 @@
+#!/usr/bin/env bash
+
+# Get the current Wi-Fi status
+status=$(nmcli radio wifi)
+
+if [ "$status" = "enabled" ]; then
+    echo "Wi-Fi is currently enabled. Turning it off..."
+    nmcli radio wifi off
+    echo "Wi-Fi has been turned off."
+elif [ "$status" = "disabled" ]; then
+    echo "Wi-Fi is currently disabled. Turning it on..."
+    nmcli radio wifi on
+    echo "Wi-Fi has been turned on."
+else
+    echo "Unknown Wi-Fi status: $status"
+    exit 1
+fi

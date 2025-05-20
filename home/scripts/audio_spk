@@ -1,0 +1,71 @@
+#!/usr/bin/env bash
+
+export LC_NUMERIC=C
+
+ui_sound(){
+  volume=$(wpctl get-volume @DEFAULT_SINK@ | awk '{print $2}')
+  if [[ "$volume" == 1.* ]]; then
+    pw-play ~/.config/hypnix/home/files/sounds/click_high.mp3
+  elif [[ "$volume" == 0.00 ]]; then
+    pw-play ~/.config/hypnix/home/files/sounds/click_high.mp3
+  else
+    pw-play ~/.config/hypnix/home/files/sounds/click_low.mp3
+  fi
+}
+
+get_volume_info() {
+  wpctl get-volume @DEFAULT_SINK@
+}
+
+spk_icon() {
+  local info=$(get_volume_info)
+  local muted=$(grep -o "\[MUTED\]" <<< "$info")
+  local volume=$(awk '{print $2}' <<< "$info")
+  local percent=$(awk "BEGIN {printf \"%.0f\", $volume * 100}")
+
+  if [[ -n "$muted" || "$volume" == "0.00" ]]; then
+    echo "󰖁"
+  elif (( percent > 66 )); then
+    echo "󰕾"
+  elif (( percent > 33 )); then
+    echo "󰖀"
+  else
+    echo "󰕿"
+  fi
+}
+
+spk_notify() {
+  tmpDir="/tmp/hypnix"
+  tmpFile="$tmpDir/notification_id_osd"
+
+  if [[ ! -d "$tmpDir" ]]; then
+    mkdir "$tmpDir"
+  fi
+
+  local info=$(get_volume_info)
+  local muted=$(grep -o "\[MUTED\]" <<< "$info")
+  local volume=$(awk '{print $2}' <<< "$info")
+  local percent=$(awk "BEGIN {printf \"%.0f\", $volume * 100}")
+  local icon=$(spk_icon)
+
+  if [[ "$volume" == "0.00" || -n "$muted" ]]; then
+    makoctl dismiss -n $(cat $tmpFile)
+    notify-send -a "osd-volume-muted" -u "low" -h "int:value:0" "$icon  Muted" -p > $tmpFile
+  else
+    makoctl dismiss -n $(cat $tmpFile)
+    notify-send -a "osd-volume" -u "low" -h "int:value:$percent" "$icon  ${percent}%" -p > $tmpFile
+  fi
+}
+
+case "$1" in
+  --icon) spk_icon ;;
+  --text)
+    info=$(get_volume_info)
+    grep -q "\[MUTED\]" <<< "$info" && echo "Muted" || awk '{printf "%.0f%%\n", $2 * 100}' <<< "$info"
+    ;;
+  --toggle) wpctl set-mute @DEFAULT_SINK@ toggle && spk_notify && ui_sound;;
+  --inc) wpctl set-volume -l 1.0 @DEFAULT_SINK@ 5%+ && spk_notify && ui_sound ;;
+  --dec) wpctl set-volume -l 1.0 @DEFAULT_SINK@ 5%- && spk_notify && ui_sound ;;
+  --max) wpctl set-volume -l 1.0 @DEFAULT_SINK@ 100% && spk_notify && ui_sound ;;
+  --mid) wpctl set-volume -l 1.0 @DEFAULT_SINK@ 50% && spk_notify && ui_sound ;;
+esac

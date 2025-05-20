@@ -1,0 +1,200 @@
+#!/usr/bin/env bash
+# ███████╗███████╗████████╗████████╗██╗███╗   ██╗ ██████╗ ███████╗
+# ██╔════╝██╔════╝╚══██╔══╝╚══██╔══╝██║████╗  ██║██╔════╝ ██╔════╝
+# ███████╗█████╗     ██║      ██║   ██║██╔██╗ ██║██║  ███╗███████╗
+# ╚════██║██╔══╝     ██║      ██║   ██║██║╚██╗██║██║   ██║╚════██║
+# ███████║███████╗   ██║      ██║   ██║██║ ╚████║╚██████╔╝███████║
+# ╚══════╝╚══════╝   ╚═╝      ╚═╝   ╚═╝╚═╝  ╚═══╝ ╚═════╝ ╚══════╝
+# ███╗   ███╗███████╗███╗   ██╗██╗   ██╗
+# ████╗ ████║██╔════╝████╗  ██║██║   ██║
+# ██╔████╔██║█████╗  ██╔██╗ ██║██║   ██║ script by furcom
+# ██║╚██╔╝██║██╔══╝  ██║╚██╗██║██║   ██║ https://github.com/furcom
+# ██║ ╚═╝ ██║███████╗██║ ╚████║╚██████╔╝
+# ╚═╝     ╚═╝╚══════╝╚═╝  ╚═══╝ ╚═════╝
+
+###################################################
+#################### Variables ####################
+###################################################
+
+# Monitor
+MONITOR=$(hyprctl monitors | grep Monitor | awk '{print $2}')
+
+# General
+EDITOR="nvim"
+TERMINAL="kitty"
+
+RofiScriptsDir="$RofiDir/scripts"
+RofiMenu="rofi -dmenu -config $RofiDir/config.rasi"
+RofiMenuSettings="rofi -dmenu"
+
+###################################################
+#################### Functions ####################
+###################################################
+
+main_menu() {
+  bash /home/furcom/.config/hypnix/home/scripts/ui_sounds --swoosh
+  OPTIONS=" Hyprland\n󰏖 Packages\n Extras\n󰸉 Wallpaper\n󰅙 Exit"
+  CHOICE=$(echo -e "$OPTIONS" | $RofiMenuSettings -selected-row $SelectedRowMain -theme-str 'inputbar{enabled:false;} window{height:12.125em;width:9em;} listview{scrollbar:false;} configuration{show-icons:false;}')
+
+  if [ -z "$CHOICE" ]; then
+    bash /home/furcom/.config/hypnix/home/scripts/ui_sounds --swoosh
+    exit 0
+  fi
+
+  if [ -z "$CHOICE" ]; then
+    main_menu
+  elif [ "$CHOICE" == "󰅙 Exit" ]; then
+    exit 0
+  else
+    case "$CHOICE" in
+      " Hyprland")
+        hyprland_menu ;;
+      "󰸉 Wallpaper")
+        waypaper ;;
+      " Extras")
+        extras_menu ;;
+      "󰏖 Packages")
+        packages_menu ;;
+      *)
+        echo "Invalid choice" ;;
+    esac
+  fi
+}
+
+hyprland_menu() {
+  HYPRLAND_OPTIONS="󰤺 Animations\n Bindings\n Colors (Wallust)\n󰈙 Config\n Decorations\n General\n󰍽 Input\n Layouts\n Misc\n Plugins\n Rules\n󱞲 Back"
+  HYPRLAND_SUBCHOICE=$(echo -e "$HYPRLAND_OPTIONS" | $RofiMenuSettings -selected-row $SelectedRowHypr -theme-str 'inputbar{enabled:false;} window{height:26.125em;width:12.5em;} listview{scrollbar:false;} configuration{show-icons:false;}')
+
+  if [ -z "$HYPRLAND_SUBCHOICE" ]; then
+    SelectedRowMain="0"
+	  main_menu
+      elif [ "$HYPRLAND_SUBCHOICE" == "󱞲 Back" ]; then
+        SelectedRowMain="0"
+        main_menu
+      else
+      case "$HYPRLAND_SUBCHOICE" in
+        "󰤺 Animations") $TERMINAL sh -c "$EDITOR $HOME/.config/hypnix/home/modules/hypr/configs/animations.nix" ;;
+        " Bindings") $TERMINAL sh -c "$EDITOR $HOME/.config/hypnix/home/modules/hypr/configs/bind.nix" ;;
+        " Colors (Wallust)") $TERMINAL sh -c "$EDITOR $HOME/.config/hypnix/home/files/wallust/templates/hyprland";;
+        "󰈙 Config") $TERMINAL sh -c "$EDITOR $HOME/.config/hypnix/home/modules/hypr/hyprland.nix" ;;
+        " Decorations") $TERMINAL sh -c "$EDITOR $HOME/.config/hypnix/home/modules//hypr/configs/decorations.nix" ;;
+        " General") $TERMINAL sh -c "$EDITOR $HOME/.config/hypnix/home/modules/hypr/configs/general.nix" ;;
+        "󰍽 Input") $TERMINAL sh -c "$EDITOR $HOME/.config/hypnix/home/modules/hypr/configs/input.nix" ;;
+        " Layouts") $TERMINAL sh -c "$EDITOR $HOME/.config/hypnix/home/modules/hypr/configs/layouts.nix" ;;
+        " Misc") $TERMINAL sh -c "$EDITOR $HOME/.config/hypnix/home/modules/hypr/configs/misc.nix" ;;
+        " Plugins")$TERMINAL sh -c "$EDITOR $HOME/.config/hypnix/home/modules/hypr/configs/plugins.nix" ;;
+        " Rules") $TERMINAL sh -c "$EDITOR $HOME/.config/hypnix/home/modules/hypr/configs/rules.nix" ;;
+      esac
+  fi
+}
+
+packages_menu() {
+  PACKAGES_OPTIONS=" Check Package Updates\n󰏕 Update Nix Packages\n Flake Rebuild System\n󰃢 Nix Garbage Collect\n󱞲 Back"
+  PACKAGES_SUBCHOICE=$(echo -e "$PACKAGES_OPTIONS" | $RofiMenuSettings -theme-str 'inputbar{enabled:false;} window{height:12.25em;width:15.25em;} listview{scrollbar:false;} configuration{show-icons:false;}')
+
+  if [ -z "$PACKAGES_SUBCHOICE" ]; then
+ $HOME/.config/hypnix/home/configs/wallust/templates   SelectedRowMain="1"
+    main_menu
+  elif [ "$PACKAGES_SUBCHOICE" == "󱞲 Back" ]; then
+    SelectedRowMain="1"
+    main_menu
+  else
+    case "$PACKAGES_SUBCHOICE" in
+      " Check Package Updates") $TERMINAL sh -c "$HOME/.config/hypnix/home/modules/hypr/scripts/updates -cx" ;;
+      "󰏕 Update Nix Packages") $TERMINAL sh -c "$HOME/.config/hypnix/home/modules/hypr/scripts/updates -u" ;;
+      " Flake Rebuild System") $TERMINAL sh -c "nixos-rebuild switch --flake /home/furcom/.config/hypnix/#hypnix" ;;
+      "󰃢 Nix Garbage Collect") $TERMINAL sh -c "nix-collect-garbage -d" ;;
+    esac
+  fi
+}
+
+extras_menu() {
+  EXTRAS_OPTIONS="󰵷 Fusuma\n Hyprlock\n󱂩 Waybar\n󰄛 Kitty\n Oh My Posh\n󰮫 Rofi\n Wallust\n󱞲 Back"
+  EXTRAS_SUBCHOICE=$(echo -e "$EXTRAS_OPTIONS" | $RofiMenuSettings -selected-row $SelectedRowExtras -theme-str 'inputbar{enabled:false;} window{height:18em;width:9.5em;} listview{scrollbar:false;} configuration{show-icons:false;}')
+
+  if [ -z "$EXTRAS_SUBCHOICE" ]; then
+    SelectedRowMain="2"
+    main_menu
+  elif [ "$EXTRAS_SUBCHOICE" == "󱞲 Back" ]; then
+    SelectedRowMain="2"
+    main_menu
+  else
+    case "$EXTRAS_SUBCHOICE" in
+      "󰵷 Fusuma") fusuma_menu ;;
+      " Hyprlock") $TERMINAL sh -c "$EDITOR $HOME/.config/hypnix/home/files/wallust/templates/hyprlock" ;;
+      "󱂩 Waybar") waybar_menu ;;
+      "󰄛 Kitty") kitty_menu ;;
+      " Oh My Posh") $TERMINAL sh -c "$EDITOR $HOME/.config/hypnix/home/files/wallust/templates/oh-my-posh" ;;
+      "󰮫 Rofi") $TERMINAL sh -c "$EDITOR $HOME/.config/hypnix/home/files/wallust/templates/rofi" ;;
+      " Wallust") $TERMINAL sh -c "$EDITOR $HOME/.config/hypnix/home/files/wallust/wallust.toml" ;;
+    esac
+  fi
+}
+
+fusuma_menu() {
+  FUSUMA_OPTIONS="󰈙 Config\n󰑓 Restart\n󱞲 Back"
+  FUSUMA_SUBCHOICE=$(echo -e "$FUSUMA_OPTIONS" | $RofiMenuSettings -theme-str 'inputbar{enabled:false;} window{height:8.25em;width:8em;} listview{scrollbar:false;} configuration{show-icons:false;}')
+
+  if [ -z "$FUSUMA_SUBCHOICE" ]; then
+    SelectedRowExtras="0"
+    extras_menu
+  elif [ "$FUSUMA_SUBCHOICE" == "󱞲 Back" ]; then
+    SelectedRowExtras="0"
+    extras_menu
+  else
+    case "$FUSUMA_SUBCHOICE" in
+      "󰈙 Config") $TERMINAL sh -c "$EDITOR $HOME/.config/hypnix/home/modules/fusuma.nix" ;;
+      "󰑓 Restart") pkill fusuma && fusuma -d ;;
+    esac
+  fi
+}
+
+waybar_menu() {
+  WAYBAR_OPTIONS="󰈙 Config\n󰑓 Restart\n󱞲 Back"
+  WAYBAR_SUBCHOICE=$(echo -e "$WAYBAR_OPTIONS" | $RofiMenuSettings -theme-str 'inputbar{enabled:false;} window{height:8.25em;width:8em;} listview{scrollbar:false;} configuration{show-icons:false;}')
+
+  if [ -z "$WAYBAR_SUBCHOICE" ]; then
+    SelectedRowExtras="2"
+    extras_menu
+  elif [ "$WAYBAR_SUBCHOICE" == "󱞲 Back" ]; then
+    SelectedRowExtras="2"
+    extras_menu
+  else
+    case "$WAYBAR_SUBCHOICE" in
+      "󰑓 Restart") killall -r waybar; waybar ;;
+      "󰈙 Config" ) $TERMINAL sh -c "$EDITOR $HOME/.config/hypnix/home/modules/waybar.nix" ;;
+    esac
+  fi
+}
+
+kitty_menu() {
+  KITTY_OPTIONS="󰈙 Config\n󰑓 Reload Config\n Colors (Wallust)\n󱞲 Back"
+  KITTY_SUBCHOICE=$(echo -e "$KITTY_OPTIONS" | $RofiMenuSettings -theme-str 'inputbar{enabled:false;} window{height:10.25em;width:12.5em;} listview{scrollbar:false;} configuration{show-icons:false;}')
+
+  if [ -z "$KITTY_SUBCHOICE" ]; then
+    SelectedRowExtras="3"
+    extras_menu
+  elif [ "$KITTY_SUBCHOICE" == "󱞲 Back" ]; then
+    SelectedRowExtras="3"
+    extras_menu
+  else
+    case "$KITTY_SUBCHOICE" in
+      "󰈙 Config") $TERMINAL sh -c "$EDITOR $HOME/.config/hypnix/home/modules/kitty.nix" ;;
+      "󰑓 Reload Config") kill -SIGUSR1 $(pidof kitty) ;;
+      " Colors (Wallust)") $TERMINAL sh -c "$EDITOR $HOME/.config/hypnix/home/files/wallust/templates/kitty" ;;
+    esac
+  fi
+}
+
+#####################################################
+#################### Main Script ####################
+#####################################################
+
+# Process script arguments
+case "$1" in
+ --menu) main_menu ;;
+  --uno) update_nix_pakages ;;
+  --frs) flake_rebuild_system ;;
+  --ngc) nix_garbage_collect ;;
+      *) exit 1 ;;
+esac

@@ -1,0 +1,35 @@
+#!/usr/bin/env bash
+
+DND_STATUS=$(cat ~/.cache/hypnix/dnd_status 2>/dev/null)
+
+swoosh(){
+  if [[ $DND_STATUS == "dndoff" ]]; then
+    pw-play ~/.config/hypnix/home/files/sounds/swoosh.mp3 &
+  fi
+}
+
+critical(){
+  if [[ $DND_STATUS == "dndoff" ]]; then
+    pw-play ~/.config/hypnix/home/files/sounds/critical.mp3 &
+  fi
+}
+
+click-high(){
+  if [[ $DND_STATUS == "dndoff" ]]; then
+    pw-play ~/.config/hypnix/home/files/sounds/click_high.mp3 &
+  fi
+}
+
+click-low(){
+  if [[ $DND_STATUS == "dndoff" ]]; then
+    pw-play ~/.config/hypnix/home/files/sounds/click_high.mp3 &
+  fi
+}
+
+case "$1" in
+  --swoosh) swoosh ;;
+  --critical) critical ;;
+  --click-low) click-low ;;
+  --click-high) click-high ;;
+  *) exit 0 ;;
+esac

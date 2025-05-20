@@ -1,0 +1,74 @@
+#!/usr/bin/env bash
+#  Brightness control script by furcom (https://github.com/furcom)
+
+export LC_NUMERIC=C
+
+get_percent() {
+  brightnessctl | grep Current | awk '{ print $4 }' | tr -d '(%)'
+}
+
+brightness_text() {
+  echo "$(get_percent)%"
+}
+
+ui_sound(){
+  brightness=$(get_percent)
+  if [[ "$brightness" == 100 ]]; then
+    pw-play ~/.config/hypnix/home/files/sounds/click_high.mp3
+  elif [[ "$brightness" == 0 ]]; then
+    pw-play ~/.config/hypnix/home/files/sounds/click_high.mp3
+  else
+    pw-play ~/.config/hypnix/home/files/sounds/click_low.mp3
+  fi
+}
+
+brightness_icon() {
+  percent=$(get_percent)
+
+  if (( percent <= 10 )); then
+    echo "󰃚"
+  elif (( percent <= 20 )); then
+    echo "󰃛"
+  elif (( percent <= 30 )); then
+    echo "󰃜"
+  elif (( percent <= 40 )); then
+    echo "󰃞"
+  elif (( percent <= 50 )); then
+    echo "󰃟"
+  elif (( percent <= 70 )); then
+    echo "󰃝"
+  elif (( percent <= 90 )); then
+    echo ""
+  else
+    echo "󰃠"
+  fi
+}
+
+brightness_notify() {
+  tmpDir="/tmp/hypnix"
+  tmpFile="$tmpDir/notification_id_osd"
+  percent=$(get_percent)
+  icon=$(brightness_icon)
+
+  if [[ ! -d "$tmpDir" ]]; then
+    mkdir "$tmpDir"
+  fi
+
+  makoctl dismiss -n $(cat $tmpFile)
+  notify-send -a "osd-brightness" -u "low" -h "int:value:$percent" "$icon  $percent%  $bar" -p > $tmpFile
+}
+
+case "$1" in
+  --ico) brightness_icon ;;
+  --txt) brightness_text && brightness_notify && ui_sound ;;
+  --inc) brightnessctl set +5% && brightness_notify && ui_sound ;;
+  --dec) brightnessctl set 5%- && brightness_notify && ui_sound ;;
+  --max) brightnessctl set 100% && brightness_notify && ui_sound ;;
+  --mid) brightnessctl set 50% && brightness_notify && ui_sound ;;
+  --min) brightnessctl set 10% && brightness_notify && ui_sound ;;
+  *)
+    echo "Usage: $0 [--icon|--text|--inc|--dec|--max|--mid|--min]"
+    exit 1
+    ;;
+esac
+

@@ -1,0 +1,60 @@
+#!/usr/bin/env bash
+
+STATUS_FILE="${HOME}/.cache/hypnix/dnd_status"
+ICON_ON="󰂛"   # DND aktiv (z. B. durchgestrichene Glocke)
+ICON_OFF=""  # DND inaktiv (normale Glocke)
+
+mkdir -p "$(dirname "$STATUS_FILE")"
+
+current_status="$(cat "$STATUS_FILE" 2>/dev/null || echo "dndoff")"
+
+show_icon() {
+  if [[ "$current_status" == "dndon" ]]; then
+    echo "$ICON_ON"
+  else
+    echo "$ICON_OFF"
+  fi
+}
+
+show_status() {
+  if [[ "$current_status" == "dndon" ]]; then
+    echo "DND Enabled"
+  else
+    echo "DND Disabled"
+  fi
+}
+
+case "$1" in
+  --on)
+    echo "dndon" > "$STATUS_FILE"
+    show_icon
+    pw-play ~/.config/hypnix/home/files/sounds/click_high.mp3 &
+    ;;
+  --off)
+    echo "dndoff" > "$STATUS_FILE"
+    show_icon
+    pw-play ~/.config/hypnix/home/files/sounds/click_low.mp3 &
+    ;;
+  --toggle)
+    if [[ "$current_status" == "dndon" ]]; then
+      echo "dndoff" > "$STATUS_FILE"
+      pw-play ~/.config/hypnix/home/files/sounds/click_low.mp3 &
+    else
+      echo "dndon" > "$STATUS_FILE"
+      pw-play ~/.config/hypnix/home/files/sounds/click_high.mp3 &
+    fi
+    current_status="$(cat "$STATUS_FILE")"
+    show_icon
+    ;;
+  --icon)
+    show_icon
+    ;;
+  --status)
+    show_status
+    ;;
+  *)
+    echo "Usage: dnd [--on|--off|--toggle|--icon|--text]"
+    exit 1
+    ;;
+esac
+

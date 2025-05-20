@@ -1,0 +1,17 @@
+#!/usr/bin/env bash
+
+# Check if Bluetooth is powered on or off
+status=$(bluetoothctl show | grep "Powered" | awk '{print $2}')
+
+if [ "$status" = "yes" ]; then
+    echo "Bluetooth is currently ON. Turning it OFF..."
+    bluetoothctl power off
+    echo "Bluetooth has been turned OFF."
+elif [ "$status" = "no" ]; then
+    echo "Bluetooth is currently OFF. Turning it ON..."
+    bluetoothctl power on
+    echo "Bluetooth has been turned ON."
+else
+    echo "Unknown Bluetooth status: $status"
+    exit 1
+fi

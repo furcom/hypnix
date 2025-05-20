@@ -1,0 +1,92 @@
+#!/usr/bin/env bash
+
+confirm_menu() {
+  bash /home/furcom/.config/hypnix/home/scripts/ui_sounds --critical
+  local prompt="$1"
+  OPTIONS=" No\n Yes"
+  CHOICE=$(echo -e "$OPTIONS" | rofi -dmenu -p "$prompt" -theme-str 'inputbar{enabled:false;} window{height:6.25em;width:9em;} listview{scrollbar:false;} configuration{show-icons:false;}')
+  case "$CHOICE" in
+    " Yes") return 0 ;;
+    " No") exit 0 ;;
+    *) exit 1 ;;
+  esac
+}
+
+perform_action() {
+  case "$1" in
+    --poweroff)
+      if confirm_menu "Power off system?"; then
+        systemctl poweroff
+      fi
+      ;;
+    --reboot)
+      if confirm_menu "Reboot system?"; then
+        systemctl reboot
+      fi
+      ;;
+    --hibernate)
+      if confirm_menu "Hibernate system?"; then
+        systemctl hibernate
+      fi
+      ;;
+    --suspend)
+      if confirm_menu "Suspend system?"; then
+        systemctl suspend
+      fi
+      ;;
+    --logout)
+      if confirm_menu "Logout user?"; then
+        hyprctl dispatch exit
+        pkill -KILL -u "$USER"
+      fi
+      ;;
+    --lock)
+      hyprlock
+      ;;
+    *)
+      echo "Ungültige Option: $1"
+      exit 1
+      ;;
+  esac
+}
+
+show_main_menu() {
+  bash /home/furcom/.config/hypnix/home/scripts/ui_sounds --swoosh
+  OPTIONS="  Poweroff\n  Reboot\n  Hibernate\n  Suspend\n  Logout\n  Lock"
+  CHOICE=$(echo -e "$OPTIONS" | rofi -dmenu -p "System-Action" \
+    -kb-custom-1 "r" \
+    -kb-custom-2 "l" \
+    -kb-custom-3 "h" \
+    -kb-custom-4 "p" \
+    -kb-custom-5 "s" \
+    -kb-custom-6 "e" \
+    -theme-str 'inputbar{enabled:false;} window{height:14.125em;width:9.5em;} listview{scrollbar:false;} configuration{show-icons:false;}')
+
+  case "$?" in
+    10) perform_action --reboot ;;     # r
+    11) perform_action --lock ;;       # l
+    12) perform_action --hibernate ;;  # h
+    13) perform_action --poweroff ;;   # p
+    14) perform_action --suspend ;;    # s
+    15) perform_action --logout ;;     # e
+    0)
+      case "$CHOICE" in
+        *Poweroff*) perform_action --poweroff ;;
+        *Reboot*) perform_action --reboot ;;
+        *Hibernate*) perform_action --hibernate ;;
+        *Suspend*) perform_action --suspend ;;
+        *Logout*) perform_action --logout ;;
+        *Lock*) perform_action --lock ;;
+        *) exit 1 ;;
+      esac
+      ;;
+    *) bash /home/furcom/.config/hypnix/home/scripts/ui_sounds --swoosh
+       exit 1 ;;
+  esac
+}
+
+if [ $# -eq 0 ]; then
+  show_main_menu
+else
+  perform_action "$1"
+fi
